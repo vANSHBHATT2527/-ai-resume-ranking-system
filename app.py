@@ -10,7 +10,7 @@ import fitz  # PyMuPDF
 st.set_page_config(page_title="AI Resume Ranking System", layout="wide")
 st.title("🤖 AI Resume Screening & Ranking System (MNC Level)")
 
-@st.cache_resource
+@st.cache_resource(show_spinner="Loading NLP model...")
 def load_model():
     tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
     model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
