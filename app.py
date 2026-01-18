@@ -14,7 +14,8 @@ except Exception as e:
 # Load SBERT model
 @st.cache_resource
 def load_model():
-    return SentenceTransformer("all-MiniLM-L6-v2")
+    return SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+
 
 sbert = load_model()
 
