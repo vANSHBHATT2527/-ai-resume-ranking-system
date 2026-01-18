@@ -1,22 +1,18 @@
 import streamlit as st
 import os
 import pandas as pd
+from sentence_transformers import SentenceTransformer, util
 from groq import Groq
-from sklearn.metrics.pairwise import cosine_similarity
-from transformers import AutoTokenizer, AutoModel
-import torch
 import fitz  # PyMuPDF
 
 st.set_page_config(page_title="AI Resume Ranking System", layout="wide")
 st.title("🤖 AI Resume Screening & Ranking System (MNC Level)")
 
-@st.cache_resource(show_spinner="Loading NLP model...")
+@st.cache_resource
 def load_model():
-    tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
-    model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
-    return tokenizer, model
+    return SentenceTransformer("all-MiniLM-L6-v2")
 
-tokenizer, model = load_model()
+model = load_model()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
@@ -26,12 +22,6 @@ tech_skills = [
     "pandas", "numpy", "power bi", "tableau"
 ]
 
-def embed_text(text):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
-    with torch.no_grad():
-        embeddings = model(**inputs).last_hidden_state.mean(dim=1)
-    return embeddings
-
 def extract_text(file):
     doc = fitz.open(stream=file.read(), filetype="pdf")
     return " ".join(page.get_text() for page in doc)
@@ -40,13 +30,13 @@ job_desc = st.text_area("📌 Paste Job Description")
 uploaded_files = st.file_uploader("📂 Upload Resumes (PDF)", type="pdf", accept_multiple_files=True)
 
 if st.button("🚀 Analyze & Rank") and uploaded_files and job_desc:
-    job_emb = embed_text(job_desc).numpy()
+    job_emb = model.encode(job_desc, convert_to_tensor=True)
     results = []
 
     for file in uploaded_files:
         text = extract_text(file)
-        emb = embed_text(text).numpy()
-        score = cosine_similarity(emb, job_emb)[0][0] * 100
+        emb = model.encode(text, convert_to_tensor=True)
+        score = float(util.cos_sim(emb, job_emb)) * 100
 
         text_lower = text.lower()
         matched = [s for s in tech_skills if s in text_lower]
@@ -65,11 +55,13 @@ if st.button("🚀 Analyze & Rank") and uploaded_files and job_desc:
     st.download_button("⬇ Download CSV", df.to_csv(index=False), "ranked_candidates.csv")
 
     top_resume = extract_text(uploaded_files[0])
+
     prompt = f"""
-    You are a technical recruiter.
-    Analyze this resume and JD and give improvement tips:
+    You are a senior technical recruiter.
+    Analyze this resume and job description.
     Resume: {top_resume}
-    JD: {job_desc}
+    Job: {job_desc}
+    Give improvement suggestions and interview focus areas.
     """
 
     completion = client.chat.completions.create(
@@ -78,5 +70,5 @@ if st.button("🚀 Analyze & Rank") and uploaded_files and job_desc:
         max_tokens=600
     )
 
-    st.subheader("🧠 LLaMA-3 Feedback")
+    st.subheader("🧠 LLaMA-3 Recruiter Feedback")
     st.write(completion.choices[0].message.content)
