@@ -5,13 +5,32 @@ from sentence_transformers import SentenceTransformer, util
 from groq import Groq
 import fitz  # PyMuPDF
 
-# -------------------- Page Config --------------------
 st.set_page_config(
-    page_title="AI Resume Screening & Ranking System",
+    page_title="AI Resume Screening & Ranking",
+    page_icon="🤖",
     layout="wide"
 )
 
-st.title("🤖 AI Resume Screening & Ranking System (MNC Level)")
+st.markdown("""
+<style>
+body {
+    background-color: #0e1117;
+}
+.block-container {
+    padding-top: 2rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<h1 style='color:#00ffcc;'>🤖 AI Resume Screening & Ranking System</h1>
+<p style='color:#9aa4b2; font-size:16px;'>
+ATS powered by NLP & AI
+</p>
+<hr>
+""", unsafe_allow_html=True)
+
+st.title("🤖 AI Resume Screening & Ranking System ")
 
 # -------------------- Load Model --------------------
 @st.cache_resource(show_spinner="Loading NLP model...")
